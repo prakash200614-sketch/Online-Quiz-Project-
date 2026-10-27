@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Quiz Application - Dev Prakash</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg-gradient); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; color: var(--text-dark); }
+    
+    .quiz-card { background: var(--card-bg); width: 100%; max-width: 680px; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; position: relative; }
+    .card-header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+    .card-header h1 { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .author-badge { font-size: 0.75rem; background: #e0e7ff; color: var(--primary); padding: 0.3rem 0.75rem; border-radius: 999px; font-weight: 600; }
+
+    .card-body { padding: 2rem; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* Category Screen */
+    .welcome-text { margin-bottom: 1.5rem; text-align: center; }
+    .welcome-text h2 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #0f172a; }
+    .welcome-text p { color: var(--text-muted); font-size: 0.95rem; }
+
+    .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .cat-card { border: 2px solid #e2e8f0; border-radius: var(--radius); padding: 1.25rem; text-align: center; cursor: pointer; transition: all 0.2s ease; background: #ffffff; }
+    .cat-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15); }
+    .cat-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+    .cat-title { font-weight: 700; font-size: 1rem; color: var(--text-dark); margin-bottom: 0.25rem; }
+    .cat-best { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
+
+    /* Quiz Screen */
+    .quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
+    .timer-badge { background: #fef3c7; color: #b45309; padding: 0.4rem 0.8rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; }
+    .timer-badge.warning { background: #fee2e2; color: var(--danger); animation: pulse 1s infinite; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+    .progress-bar-bg { width: 100%; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-bottom: 1.5rem; }
+    .progress-bar-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease; }
+
+    .question-box h3 { font-size: 1.15rem; color: var(--text-dark); margin-bottom: 1.25rem; line-height: 1.5; }
+    .options-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .option-btn { border: 2px solid #e2e8f0; background: #ffffff; padding: 0.85rem 1.1rem; border-radius: var(--radius); font-size: 0.95rem; font-weight: 500; color: var(--text-dark); text-align: left; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
+    .option-btn:hover { border-color: var(--primary); background: #f8fafc; }
+    .option-btn.selected { border-color: var(--primary); background: #e0e7ff; color: var(--primary); font-weight: 600; }
+
+    /* Controls */
+    .controls { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1.25rem; }
+    .btn { padding: 0.7rem 1.4rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: #ffffff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #e2e8f0; color: var(--text-dark); }
+    .btn-secondary:hover { background: #cbd5e1; }
+
+    /* Results Screen */
+    .results-header { text-align: center; margin-bottom: 1.5rem; }
+    .score-circle { width: 110px; height: 110px; border-radius: 50%; background: #e0e7ff; color: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 1rem; border: 4px solid var(--primary); }
+    .score-circle .score-num { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+    .score-circle .score-pct { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; text-align: center; }
+    .metric-card { background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .metric-card .val { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); }
+    .metric-card .lbl { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+    .review-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; padding-right: 0.3rem; }
+    .review-item { padding: 0.85rem; border-radius: 8px; border-left: 4px solid #cbd5e1; background: #f8fafc; font-size: 0.85rem; }
+    .review-item.correct { border-left-color: var(--success); background: #f0fdf4; }
+    .review-item.incorrect { border-left-color: var(--danger); background: #fef2f2; }
+    .review-q { font-weight: 700; color: var(--text-dark); margin-bottom: 0.3rem; }
+    .review-ans { color: var(--text-muted); }
+    .review-ans strong { color: var(--text-dark); }
+  </style>
+</head>
+<body>
+
+  <div class="quiz-card">
+    <div class="card-header">
+      <h1>Online Quiz App</h1>
+      <span class="author-badge">Dev: Dev Prakash</span>
+    </div>
+
+    <div class="card-body">
+      
+      <!-- SCREEN 1: CATEGORY SELECTION -->
+      <div id="screen-category" class="screen active">
+        <div class="welcome-text">
+          <h2>Select Quiz Category</h2>
+          <p>Test your knowledge across different web technologies & general skills!</p>
+        </div>
+
+        <div class="category-grid">
+          <div class="cat-card" onclick="startQuiz('html_css')">
+            <span class="cat-icon">🎨</span>
+            <div class="cat-title">HTML & CSS</div>
+            <div class="cat-best" id="best-html_css">Best: --%</div>
+          </div>
+          <div class="cat-card" onclick="startQuiz('javascript')">
+            <span class="cat-icon">⚡</span>
+            <div class="cat-title">JavaScript</div>
+            <div class="cat-best" id="best-javascript">Best: --%</div>
+          </div>
+          <div class="cat-card" onclick="startQuiz('gk')">
+            <span class="cat-icon">🌐</span>
+            <div class="cat-title">General Knowledge</div>
+            <div class="cat-best" id="best-gk">Best: --%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: QUIZ PLAY -->
+      <div id="screen-quiz" class="screen">
+        <div class="quiz-meta">
+          <span>Question <span id="current-q-num">1</span> of <span id="total-q-num">5</span></span>
+          <span class="timer-badge" id="timer-box">⏱️ <span id="timer-val">20</span>s</span>
+        </div>
+
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+
+        <div class="question-box">
+          <h3 id="question-text">Loading question...</h3>
+          <div class="options-list" id="options-container"></div>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-secondary" onclick="exitQuiz()">Quit</button>
+          <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()">Next Question ➔</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: RESULTS & REVIEW -->
+      <div id="screen-results" class="screen">
+        <div class="results-header">
+          <div class="score-circle">
+            <span class="score-num" id="res-score">0/0</span>
+            <span class="score-pct" id="res-pct">0%</span>
+          </div>
+          <h2 id="res-feedback">Quiz Completed!</h2>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="val" id="met-total">0</div>
+            <div class="lbl">Total</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="met-attempted">0</div>
+            <div class="lbl">Attempted</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="met-correct" style="color: var(--success);">0</div>
+            <div class="lbl">Correct</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="met-incorrect" style="color: var(--danger);">0</div>
+            <div class="lbl">Incorrect</div>
+          </div>
+        </div>
+
+        <h4 style="margin-bottom: 0.75rem; color: var(--text-dark);">Answer Review</h4>
+        <div class="review-list" id="review-container"></div>
+
+        <div class="controls">
+          <button class="btn btn-secondary" onclick="restartQuiz()">Restart Quiz</button>
+          <button class="btn btn-primary" onclick="showCategoryScreen()">Try Another Category</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // BANK - Hardcoded Questions
+    const BANK = {
+      html_css: [
+        { q: "Which CSS property changes text color?", options: ["font-color", "text-color", "color", "fg-color"], answer: 2 },
+        { q: "What does HTML stand for?", options: ["Hypertext Markup Language", "High Text Machine Language", "Hyperlink Textual Mark Logic", "Home Tool Markup Language"], answer: 0 },
+        { q: "Which HTML tag is used to define an internal style sheet?", options: ["<css>", "<script>", "<style>", "<link>"], answer: 2 },
+        { q: "Which CSS property controls element layout spacing inside borders?", options: ["margin", "padding", "border-spacing", "gap"], answer: 1 },
+        { q: "What is the correct HTML element for the largest heading?", options: ["<h6>", "<heading>", "<head>", "<h1>"], answer: 3 }
+      ],
+      javascript: [
+        { q: "Which keyword is used to declare a constant variable in JS?", options: ["var", "let", "const", "static"], answer: 2 },
+        { q: "What will 'typeof []' return in JavaScript?", options: ["array", "object", "null", "undefined"], answer: 1 },
+        { q: "Which method adds an item to the end of an array?", options: ["push()", "pop()", "shift()", "unshift()"], answer: 0 },
+        { q: "How do you write a comment in JavaScript?", options: ["<!-- comment -->", "/* comment */", "// comment", "Both B and C"], answer: 3 },
+        { q: "Which function converts a string to an integer?", options: ["parseInteger()", "parseInt()", "Number.toInt()", "convertToInt()"], answer: 1 }
+      ],
+      gk: [
+        { q: "Which river is known as the Ganga of South India?", options: ["Krishna", "Godavari", "Kaveri", "Narmada"], answer: 2 },
+        { q: "What is the capital of Tamil Nadu?", options: ["Madurai", "Coimbatore", "Chennai", "Tiruchirappalli"], answer: 2 },
+        { q: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Saturn"], answer: 1 },
+        { q: "Who wrote the Indian National Anthem?", options: ["Rabindranath Tagore", "Bankim Chandra Chattopadhyay", "Sarojini Naidu", "Subhas Chandra Bose"], answer: 0 },
+        { q: "Which element has the chemical symbol 'O'?", options: ["Gold", "Osmium", "Oxygen", "Zinc"], answer: 2 }
+      ]
+    };
+
+    const TIME_PER_QUESTION = 20; // seconds
+    const STORAGE_KEY = "quiz-best-v1";
+
+    let currentCategory = "";
+    let activeQuestions = [];
+    let currentIndex = 0;
+    let userAnswers = {};
+    let timerInterval = null;
+    let timeLeft = 0;
+
+    // Fisher-Yates Shuffle Algorithm
+    function shuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      updateBestScores();
+    });
+
+    function updateBestScores() {
+      const bestScores = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      ['html_css', 'javascript', 'gk'].forEach(cat => {
+        const score = bestScores[cat];
+        document.getElementById(`best-${cat}`).textContent = score !== undefined ? `Best: ${score}%` : "Best: --%";
+      });
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(screenId).classList.add("active");
+    }
+
+    function showCategoryScreen() {
+      clearInterval(timerInterval);
+      updateBestScores();
+      showScreen("screen-category");
+    }
+
+    function startQuiz(category) {
+      currentCategory = category;
+      activeQuestions = shuffle(BANK[category]);
+      currentIndex = 0;
+      userAnswers = {};
+      
+      showScreen("screen-quiz");
+      loadQuestion();
+      startTimer();
+    }
+
+    function loadQuestion() {
+      const q = activeQuestions[currentIndex];
+      document.getElementById("current-q-num").textContent = currentIndex + 1;
+      document.getElementById("total-q-num").textContent = activeQuestions.length;
+      document.getElementById("question-text").textContent = q.q;
+
+      // Progress bar
+      const pct = ((currentIndex + 1) / activeQuestions.length) * 100;
+      document.getElementById("progress-fill").style.width = `${pct}%`;
+
+      // Render Options
+      const container = document.getElementById("options-container");
+      container.innerHTML = q.options.map((opt, idx) => `
+        <button class="option-btn ${userAnswers[currentIndex] === idx ? 'selected' : ''}" onclick="selectOption(${idx})">
+          <span>${opt}</span>
+          ${userAnswers[currentIndex] === idx ? '<span>✓</span>' : ''}
+        </button>
+      `).join("");
+
+      document.getElementById("next-btn").textContent = 
+        currentIndex === activeQuestions.length - 1 ? "Finish Quiz 🏁" : "Next Question ➔";
+    }
+
+    function selectOption(optIndex) {
+      userAnswers[currentIndex] = optIndex;
+      loadQuestion();
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = activeQuestions.length * TIME_PER_QUESTION;
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          finishQuiz();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const timerBox = document.getElementById("timer-box");
+      const timerVal = document.getElementById("timer-val");
+      timerVal.textContent = timeLeft;
+
+      if (timeLeft <= 10) {
+        timerBox.classList.add("warning");
+      } else {
+        timerBox.classList.remove("warning");
+      }
+    }
+
+    function nextQuestion() {
+      if (currentIndex < activeQuestions.length - 1) {
+        currentIndex++;
+        loadQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function exitQuiz() {
+      if (confirm("Are you sure you want to quit this quiz attempt?")) {
+        showCategoryScreen();
+      }
+    }
+
+    function finishQuiz() {
+      clearInterval(timerInterval);
+      
+      let correctCount = 0;
+      let attemptedCount = 0;
+
+      activeQuestions.forEach((q, idx) => {
+        if (userAnswers[idx] !== undefined) {
+          attemptedCount++;
+          if (userAnswers[idx] === q.answer) {
+            correctCount++;
+          }
+        }
+      });
+
+      const totalCount = activeQuestions.length;
+      const incorrectCount = attemptedCount - correctCount;
+      const percentage = Math.round((correctCount / totalCount) * 100);
+
+      // Save Best Score in Local Storage
+      const bestScores = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      if (!bestScores[currentCategory] || percentage > bestScores[currentCategory]) {
+        bestScores[currentCategory] = percentage;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(bestScores));
+      }
+
+      // Display Results
+      document.getElementById("res-score").textContent = `${correctCount}/${totalCount}`;
+      document.getElementById("res-pct").textContent = `${percentage}%`;
+      document.getElementById("met-total").textContent = totalCount;
+      document.getElementById("met-attempted").textContent = attemptedCount;
+      document.getElementById("met-correct").textContent = correctCount;
+      document.getElementById("met-incorrect").textContent = incorrectCount;
+
+      // Render Review
+      const reviewContainer = document.getElementById("review-container");
+      reviewContainer.innerHTML = activeQuestions.map((q, idx) => {
+        const uAns = userAnswers[idx];
+        const isCorrect = uAns === q.answer;
+        const statusClass = uAns === undefined ? 'incorrect' : (isCorrect ? 'correct' : 'incorrect');
+
+        return `
+          <div class="review-item ${statusClass}">
+            <div class="review-q">${idx + 1}. ${q.q}</div>
+            <div class="review-ans">Your answer: <strong>${uAns !== undefined ? q.options[uAns] : 'Not Attempted'}</strong></div>
+            ${!isCorrect ? `<div class="review-ans">Correct answer: <strong>${q.options[q.answer]}</strong></div>` : ''}
+          </div>
+        `;
+      }).join("");
+
+      showScreen("screen-results");
+    }
+
+    function restartQuiz() {
+      startQuiz(currentCategory);
+    }
+  </script>
+</body>
+</html>
